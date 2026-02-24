@@ -28,6 +28,7 @@ classifiers = [
 ]
 dependencies = [
     "rich>=13.0",
+    "mcp>=1.0",
 ]
 
 [project.urls]
@@ -37,6 +38,7 @@ Repository = "https://github.com/filipores/claude-rank"
 
 [project.scripts]
 claude-rank = "claude_rank.cli:main"
+claude-rank-mcp = "claude_rank.mcp_server:main"
 
 [project.optional-dependencies]
 dev = [

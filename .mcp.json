@@ -1,0 +1,6 @@
+{
+  "claude-rank": {
+    "command": "${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.sh",
+    "args": ["-m", "claude_rank.mcp_server"]
+  }
+}
