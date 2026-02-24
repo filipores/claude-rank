@@ -1,0 +1,25 @@
+{
+  "name": "claude-rank",
+  "owner": {
+    "name": "filipores"
+  },
+  "metadata": {
+    "description": "Gamify your Claude Code usage with XP, levels, achievements, and streaks"
+  },
+  "plugins": [
+    {
+      "name": "claude-rank",
+      "source": "./",
+      "description": "Gamify your Claude Code usage with XP, levels, achievements, and streaks. Tracks sessions, tool calls, and streaks — all stored locally.",
+      "version": "0.1.0",
+      "author": {
+        "name": "filipores"
+      },
+      "repository": "https://github.com/filipores/claude-rank",
+      "license": "MIT",
+      "keywords": ["gamification", "xp", "levels", "achievements", "streaks", "productivity"],
+      "category": "productivity",
+      "tags": ["gamification", "stats", "rank"]
+    }
+  ]
+}
