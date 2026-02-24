@@ -2,7 +2,7 @@
 
 Gamify your Claude Code usage. Earn XP, level up, unlock achievements, and maintain streaks — all fully automatic.
 
-![Claude Rank Badge](https://img.shields.io/badge/claude--rank-Lv.16_Context_Master-7c3aed)
+![Claude Rank](claude-rank-badge.svg)
 
 ```
 ╭───────────────── CLAUDE RANK ──────────────────╮
