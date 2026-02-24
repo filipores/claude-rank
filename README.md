@@ -161,10 +161,11 @@ if [ -f "$RANK_FILE" ]; then
     TOTAL_XP=$(jq -r '.total_xp // 0' "$RANK_FILE")
     STREAK=$(jq -r '.current_streak // 0' "$RANK_FILE")
     ACHIEVEMENTS=$(jq -r '.achievements_unlocked // 0' "$RANK_FILE")
+    TOTAL_ACH=$(jq -r '.total_achievements // 25' "$RANK_FILE")
     XP_IN=$(jq -r '.xp_in_level // 0' "$RANK_FILE")
     XP_NEXT=$(jq -r '.xp_for_next // 100' "$RANK_FILE")
     [ "$XP_NEXT" -gt 0 ] 2>/dev/null && PCT=$((XP_IN * 100 / XP_NEXT)) || PCT=100
-    echo "User Rank: Level ${LEVEL} ${TITLE} (${TOTAL_XP} XP total, ${PCT}% to next level). Streak: ${STREAK} days. Achievements: ${ACHIEVEMENTS}/10 unlocked."
+    echo "User Rank: Level ${LEVEL} ${TITLE} (${TOTAL_XP} XP total, ${PCT}% to next level). Streak: ${STREAK} days. Achievements: ${ACHIEVEMENTS}/${TOTAL_ACH} unlocked."
 fi
 exit 0
 ```
