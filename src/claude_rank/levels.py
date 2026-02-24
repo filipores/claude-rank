@@ -5,16 +5,16 @@ import math
 MAX_LEVEL = 50
 
 TIERS: list[dict] = [
-    {"tier": 1, "levels": (1, 5), "name": "Prompt Novice", "color": "grey"},
-    {"tier": 2, "levels": (6, 10), "name": "Code Apprentice", "color": "green"},
-    {"tier": 3, "levels": (11, 15), "name": "Bug Slayer", "color": "blue"},
-    {"tier": 4, "levels": (16, 20), "name": "Context Master", "color": "purple"},
-    {"tier": 5, "levels": (21, 25), "name": "Refactor Sage", "color": "deep_purple"},
-    {"tier": 6, "levels": (26, 30), "name": "Pipeline Architect", "color": "gold1"},
-    {"tier": 7, "levels": (31, 35), "name": "Token Whisperer", "color": "grey89"},
-    {"tier": 8, "levels": (36, 40), "name": "Neural Commander", "color": "cyan"},
-    {"tier": 9, "levels": (41, 45), "name": "Singularity Vanguard", "color": "magenta"},
-    {"tier": 10, "levels": (46, 50), "name": "Omega Coder", "color": "yellow"},
+    {"tier": 1, "levels": (1, 5), "name": "Bronze", "color": "bronze"},
+    {"tier": 2, "levels": (6, 10), "name": "Silver", "color": "silver"},
+    {"tier": 3, "levels": (11, 15), "name": "Gold", "color": "gold"},
+    {"tier": 4, "levels": (16, 20), "name": "Platinum", "color": "teal"},
+    {"tier": 5, "levels": (21, 25), "name": "Diamond", "color": "diamond"},
+    {"tier": 6, "levels": (26, 30), "name": "Master", "color": "purple"},
+    {"tier": 7, "levels": (31, 35), "name": "Candidate Master", "color": "deep_purple"},
+    {"tier": 8, "levels": (36, 40), "name": "International Master", "color": "crimson"},
+    {"tier": 9, "levels": (41, 45), "name": "Grandmaster", "color": "amber"},
+    {"tier": 10, "levels": (46, 50), "name": "Legendary Grandmaster", "color": "legendary"},
 ]
 
 

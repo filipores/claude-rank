@@ -21,45 +21,45 @@ class TestTextWidth:
 
 class TestGenerateBadgeSvg:
     def test_contains_svg_tag(self):
-        svg = generate_badge_svg(1, "Prompt Novice", "grey")
+        svg = generate_badge_svg(1, "Bronze", "bronze")
         assert "<svg" in svg
         assert "</svg>" in svg
 
     def test_contains_label(self):
-        svg = generate_badge_svg(1, "Prompt Novice", "grey")
+        svg = generate_badge_svg(1, "Bronze", "bronze")
         assert "claude-rank" in svg
 
     def test_contains_level_and_tier(self):
-        svg = generate_badge_svg(12, "Bug Slayer", "blue")
+        svg = generate_badge_svg(12, "Gold", "gold")
         assert "Lv.12" in svg
-        assert "Bug Slayer" in svg
+        assert "Gold" in svg
 
     def test_tier_color_applied(self):
-        svg = generate_badge_svg(1, "Test", "blue")
-        assert "2563eb" in svg
+        svg = generate_badge_svg(1, "Test", "gold")
+        assert "d4a017" in svg
 
     def test_unknown_color_falls_back_to_grey(self):
         svg = generate_badge_svg(1, "Test", "unknown_color")
         assert "6b7280" in svg
 
     def test_prestige_stars_in_svg(self):
-        svg = generate_badge_svg(1, "Prompt Novice", "grey", prestige_count=2)
+        svg = generate_badge_svg(1, "Bronze", "bronze", prestige_count=2)
         assert "★★" in svg
 
     def test_no_prestige_no_stars(self):
-        svg = generate_badge_svg(1, "Prompt Novice", "grey", prestige_count=0)
+        svg = generate_badge_svg(1, "Bronze", "bronze", prestige_count=0)
         assert "★" not in svg
 
     def test_tooltip_includes_xp(self):
-        svg = generate_badge_svg(10, "Code Apprentice", "green", total_xp=5000)
+        svg = generate_badge_svg(10, "Silver", "silver", total_xp=5000)
         assert "5,000 XP" in svg
 
     def test_tooltip_includes_prestige(self):
-        svg = generate_badge_svg(1, "Prompt Novice", "grey", prestige_count=1)
+        svg = generate_badge_svg(1, "Bronze", "bronze", prestige_count=1)
         assert "Prestige 1" in svg
 
     def test_positive_dimensions(self):
-        svg = generate_badge_svg(50, "Omega Coder", "yellow", prestige_count=5)
+        svg = generate_badge_svg(50, "Legendary Grandmaster", "legendary", prestige_count=5)
         assert 'width="' in svg
         assert 'height="20"' in svg
 

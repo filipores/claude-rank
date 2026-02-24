@@ -109,12 +109,12 @@ class TestTierFromLevel:
 
     def test_level_1_is_tier_1(self):
         tier = tier_from_level(1)
-        assert tier["name"] == "Prompt Novice"
+        assert tier["name"] == "Bronze"
         assert tier["tier"] == 1
 
     def test_level_50_is_tier_10(self):
         tier = tier_from_level(50)
-        assert tier["name"] == "Omega Coder"
+        assert tier["name"] == "Legendary Grandmaster"
         assert tier["tier"] == 10
 
     def test_level_below_1_clamps(self):

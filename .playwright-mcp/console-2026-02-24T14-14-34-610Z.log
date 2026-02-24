@@ -1,0 +1,6 @@
+[     478ms] [ERROR] Setting the document's base URI to 'https://proxy.link.app/' violates the following Content Security Policy directive: "base-uri 'self'". The action has been blocked. @ https://forms.gle/rDSt7kudt7G9MrKB7:0
+[     561ms] [ERROR] Failed to load resource: the server responded with a status of 405 () @ https://forms.gle/_/DurableDeepLinkUi/cspreport:0
+[    1881ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ filesystem:https://docs.google.com/persistent/docs/fonts/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWubEbWmWggvWlkwn.woff2:0
+[    1881ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ filesystem:https://docs.google.com/persistent/docs/fonts/KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWuYjammWggvWlkwn.woff2:0
+[    1881ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ filesystem:https://docs.google.com/persistent/docs/fonts/KFOKCnqEu92Fr1Mu53ZEC9_Vu3r1gIhOszmOClHrs6ljXfMMLoHQiAr0klQmz24.woff2:0
+[    1881ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ filesystem:https://docs.google.com/persistent/docs/fonts/KFOKCnqEu92Fr1Mu53ZEC9_Vu3r1gIhOszmOClHrs6ljXfMMLmbXiAr0klQmz24.woff2:0

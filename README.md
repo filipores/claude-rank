@@ -7,7 +7,7 @@ Gamify your Claude Code usage. Earn XP, level up, unlock achievements, and maint
 ```
 ╭───────────────── CLAUDE RANK ──────────────────╮
 │                                                │
-│   Level 16 - Context Master                    │
+│   Level 16 - Platinum                        │
 │   [██████████░░░░░░░░░░] 4,916/8,951 XP        │
 │   Total: 55.3K XP                              │
 │                                                │
@@ -49,7 +49,7 @@ That's it. No manual config needed — everything works automatically after inst
 ## Features
 
 - **XP System** — Earn XP from sessions, messages, tool calls, and more
-- **50 Levels, 10 Tiers** — From *Prompt Novice* to *Omega Coder*
+- **50 Levels, 10 Tiers** — From *Bronze* to *Legendary Grandmaster*
 - **25 Achievements** — Common, Uncommon, Rare, Epic, and Legendary
 - **Streak Tracking** — Daily streaks with freezes and grace periods
 - **Prestige System** — Hit Level 50? Reset and earn permanent star badges
@@ -72,18 +72,18 @@ After installing the plugin, these commands are available in Claude Code:
 
 ## Tier System
 
-| Tier | Levels | Name | Color |
-|------|--------|------|-------|
-| 1 | 1-5 | Prompt Novice | Grey |
-| 2 | 6-10 | Code Apprentice | Green |
-| 3 | 11-15 | Bug Slayer | Blue |
-| 4 | 16-20 | Context Master | Purple |
-| 5 | 21-25 | Refactor Sage | Indigo |
-| 6 | 26-30 | Pipeline Architect | Gold |
-| 7 | 31-35 | Token Whisperer | Platinum |
-| 8 | 36-40 | Neural Commander | Cyan |
-| 9 | 41-45 | Singularity Vanguard | Magenta |
-| 10 | 46-50 | Omega Coder | Obsidian+Gold |
+| Tier | Levels | Name | Inspired By |
+|------|--------|------|-------------|
+| 1 | 1-5 | Bronze | StarCraft 2 |
+| 2 | 6-10 | Silver | StarCraft 2 |
+| 3 | 11-15 | Gold | StarCraft 2 |
+| 4 | 16-20 | Platinum | StarCraft 2 |
+| 5 | 21-25 | Diamond | StarCraft 2 |
+| 6 | 26-30 | Master | Chess FIDE |
+| 7 | 31-35 | Candidate Master | Chess FIDE |
+| 8 | 36-40 | International Master | Chess FIDE |
+| 9 | 41-45 | Grandmaster | Chess FIDE |
+| 10 | 46-50 | Legendary Grandmaster | Codeforces |
 
 ## XP System
 
