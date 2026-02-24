@@ -316,6 +316,8 @@ def do_sync(db: Database) -> dict:
         "tier_name": tier["name"],
         "total_achievements_unlocked": total_unlocked,
         "new_achievements": [a.name for a in newly_unlocked],
+        "er_mu": float(db.get_profile("er_mu") or "1500.0"),
+        "er_tier_name": db.get_profile("er_tier_name") or "Unrated",
     }
 
     # Write rank.json for status line and hooks
