@@ -69,6 +69,6 @@ class TestGenerateBadgeSvg:
             int(hex_val, 16)  # validates hex
 
     def test_valid_xml_structure(self):
-        svg = generate_badge_svg(25, "Refactor Sage", "deep_purple", prestige_count=1, total_xp=100000)
+        svg = generate_badge_svg(25, "Diamond", "diamond", prestige_count=1, total_xp=100000)
         assert svg.startswith("<svg")
         assert svg.strip().endswith("</svg>")

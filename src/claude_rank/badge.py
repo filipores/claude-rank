@@ -8,16 +8,16 @@ from __future__ import annotations
 
 # Tier color name -> hex color for SVG
 _TIER_HEX: dict[str, str] = {
-    "grey": "6b7280",
-    "green": "16a34a",
-    "blue": "2563eb",
-    "purple": "7c3aed",
-    "deep_purple": "5b21b6",
-    "gold1": "d97706",
-    "grey89": "9ca3af",
-    "cyan": "0891b2",
-    "magenta": "a21caf",
-    "yellow": "ca8a04",
+    "bronze": "cd7f32",
+    "silver": "a8a9ad",
+    "gold": "d4a017",
+    "teal": "00b4d8",
+    "diamond": "00bcd4",
+    "purple": "9146ff",
+    "deep_purple": "7b2fbe",
+    "crimson": "dc143c",
+    "amber": "ffbf00",
+    "legendary": "ff4500",
 }
 
 _LABEL = "claude-rank"

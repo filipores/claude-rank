@@ -11,8 +11,16 @@ console = Console()
 
 # Map tier colors from levels.py to valid Rich color names
 _COLOR_MAP: dict[str, str] = {
-    "grey": "grey50",
+    "bronze": "dark_orange3",
+    "silver": "grey70",
+    "gold": "gold1",
+    "teal": "deep_sky_blue1",
+    "diamond": "cyan",
+    "purple": "purple",
     "deep_purple": "dark_violet",
+    "crimson": "red1",
+    "amber": "gold1",
+    "legendary": "orange_red1",
 }
 
 
@@ -54,8 +62,8 @@ def print_dashboard(data: dict) -> None:
     total_xp = data.get("total_xp", 0)
     xp_in_level = data.get("xp_in_level", 0)
     xp_for_next = data.get("xp_for_next", 0)
-    tier_name = data.get("tier_name", "Prompt Novice")
-    tier_color = _safe_color(data.get("tier_color", "grey"))
+    tier_name = data.get("tier_name", "Bronze")
+    tier_color = _safe_color(data.get("tier_color", "bronze"))
     current_streak = data.get("current_streak", 0)
     freeze_count = data.get("freeze_count", 0)
     total_sessions = data.get("total_sessions", 0)
@@ -132,7 +140,7 @@ def print_dashboard(data: dict) -> None:
 
 def print_stats(data: dict) -> None:
     """Print detailed stats as a table."""
-    tier_color = _safe_color(data.get("tier_color", "grey"))
+    tier_color = _safe_color(data.get("tier_color", "bronze"))
 
     table = Table(
         title="Detailed Stats",
@@ -156,7 +164,7 @@ def print_stats(data: dict) -> None:
     # XP
     table.add_row("Total XP", format_number(data.get("total_xp", 0)))
     table.add_row("Level", str(data.get("level", 1)))
-    table.add_row("Tier", data.get("tier_name", "Prompt Novice"))
+    table.add_row("Tier", data.get("tier_name", "Bronze"))
 
     # Projects
     projects = data.get("projects", [])
@@ -253,7 +261,7 @@ def print_sync_result(stats: dict) -> None:
     lines.append(f"  Days synced:     {stats.get('days_synced', 0)}")
     lines.append(f"  Total XP:        {format_number(stats.get('total_xp', 0))}")
     lines.append(f"  Level:           {stats.get('level', 1)}")
-    lines.append(f"  Tier:            {stats.get('tier_name', 'Prompt Novice')}")
+    lines.append(f"  Tier:            {stats.get('tier_name', 'Bronze')}")
 
     new_achievements = stats.get("new_achievements", [])
     lines.append(f"  Achievements:    {stats.get('total_achievements_unlocked', 0)} unlocked")

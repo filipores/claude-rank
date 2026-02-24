@@ -9,12 +9,12 @@ class TestGetRank:
     def test_reads_rank_json_if_exists(self, mock_path):
         mock_file = MagicMock()
         mock_file.exists.return_value = True
-        mock_file.read_text.return_value = '{"level": 10, "title": "Code Apprentice"}'
+        mock_file.read_text.return_value = '{"level": 10, "title": "Silver"}'
         mock_path.home.return_value / ".claude" / "rank.json"  # noqa: B018
         mock_path.home.return_value.__truediv__.return_value.__truediv__.return_value = mock_file
         result = get_rank()
         assert result["level"] == 10
-        assert result["title"] == "Code Apprentice"
+        assert result["title"] == "Silver"
 
     @patch("claude_rank.mcp_server._get_db")
     @patch("claude_rank.mcp_server.Path")
@@ -119,7 +119,7 @@ class TestGetBadge:
         mock_db = MagicMock()
         mock_db.get_all_profile.return_value = {
             "total_xp": "5000", "level": "10",
-            "tier_name": "Code Apprentice", "tier_color": "green",
+            "tier_name": "Silver", "tier_color": "silver",
             "prestige_count": "0",
         }
         mock_get_db.return_value = mock_db
@@ -127,7 +127,7 @@ class TestGetBadge:
         assert "svg" in result
         assert "<svg" in result["svg"]
         assert result["level"] == 10
-        assert result["tier_name"] == "Code Apprentice"
+        assert result["tier_name"] == "Silver"
         assert result["total_xp"] == 5000
         assert "markdown" in result
         mock_db.close.assert_called_once()
