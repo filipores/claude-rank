@@ -79,8 +79,13 @@ class ClaudeDataParser:
 
         longest = raw.get("longestSession", {})
         hour_counts_raw = raw.get("hourCounts", [])
-        # Ensure exactly 24 entries
-        hour_counts = (hour_counts_raw + [0] * 24)[:24]
+        # Handle both list and dict formats for hourCounts
+        if isinstance(hour_counts_raw, dict):
+            hour_counts = [hour_counts_raw.get(str(h), 0) for h in range(24)]
+        elif isinstance(hour_counts_raw, list):
+            hour_counts = (hour_counts_raw + [0] * 24)[:24]
+        else:
+            hour_counts = [0] * 24
 
         return ClaudeStats(
             total_sessions=raw.get("totalSessions", 0),
