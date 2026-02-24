@@ -50,6 +50,7 @@ from claude_rank.levels import (
 )
 from claude_rank.parser import ClaudeDataParser
 from claude_rank.streaks import calculate_streak
+from claude_rank.engagement_rating import calculate_historical_er, er_tier_from_mu
 from claude_rank.xp import calculate_historical_xp, calculate_total_xp
 
 
@@ -197,6 +198,22 @@ def do_sync(db: Database) -> dict:
     )
     total_xp = calculate_total_xp(daily_xp_list)
 
+    # Calculate Engagement Rating
+    er_results = calculate_historical_er(daily_dicts)
+    if er_results:
+        last_er = er_results[-1]
+        er_tier = er_tier_from_mu(last_er.mu_after)
+        db.set_profile("er_mu", str(round(last_er.mu_after, 2)))
+        db.set_profile("er_phi", str(round(last_er.phi_after, 2)))
+        db.set_profile("er_sigma", str(round(last_er.sigma_after, 4)))
+        db.set_profile("er_tier_name", er_tier["name"])
+        db.set_profile("er_last_rated_date", last_er.date)
+        for er in er_results:
+            db.upsert_er_history(
+                er.date, mu=er.mu_after, phi=er.phi_after, sigma=er.sigma_after,
+                quality_score=er.quality_score, mu_before=er.mu_before, outcome=er.outcome,
+            )
+
     # Store daily stats in DB
     for dxp in daily_xp_list:
         activity = next((da for da in stats.daily_activity if da.date == dxp.date), None)
@@ -302,7 +319,12 @@ def do_sync(db: Database) -> dict:
     }
 
     # Write rank.json for status line and hooks
-    _write_rank_json(total_xp, level, tier, streak_info, total_unlocked, prestige_count)
+    _write_rank_json(
+        total_xp, level, tier, streak_info, total_unlocked, prestige_count,
+        er_mu=float(db.get_profile("er_mu") or "1500.0"),
+        er_phi=float(db.get_profile("er_phi") or "350.0"),
+        er_tier_name=db.get_profile("er_tier_name") or "Unrated",
+    )
 
     print_sync_result(result)
     return result
@@ -315,6 +337,10 @@ def _write_rank_json(
     streak_info: object,
     achievements_unlocked: int,
     prestige_count: int = 0,
+    *,
+    er_mu: float = 1500.0,
+    er_phi: float = 350.0,
+    er_tier_name: str = "Unrated",
 ) -> None:
     """Write ~/.claude/rank.json for status line and SessionStart hook."""
     prestige_xp = get_prestige_xp(total_xp, prestige_count)
@@ -334,6 +360,9 @@ def _write_rank_json(
         "total_achievements": len(ACHIEVEMENTS),
         "prestige_count": prestige_count,
         "prestige_stars": prestige_stars(prestige_count),
+        "er_mu": er_mu,
+        "er_phi": er_phi,
+        "er_tier_name": er_tier_name,
         "last_sync": datetime.now(tz=timezone.utc).isoformat(),
     }
     rank_file = Path.home() / ".claude" / "rank.json"
@@ -392,6 +421,22 @@ def do_incremental_sync(db: Database) -> dict:
             streak_day=True,
         )
 
+    # Calculate Engagement Rating
+    er_results = calculate_historical_er(all_daily_dicts)
+    if er_results:
+        last_er = er_results[-1]
+        er_tier = er_tier_from_mu(last_er.mu_after)
+        db.set_profile("er_mu", str(round(last_er.mu_after, 2)))
+        db.set_profile("er_phi", str(round(last_er.phi_after, 2)))
+        db.set_profile("er_sigma", str(round(last_er.sigma_after, 4)))
+        db.set_profile("er_tier_name", er_tier["name"])
+        db.set_profile("er_last_rated_date", last_er.date)
+        for er in er_results:
+            db.upsert_er_history(
+                er.date, mu=er.mu_after, phi=er.phi_after, sigma=er.sigma_after,
+                quality_score=er.quality_score, mu_before=er.mu_before, outcome=er.outcome,
+            )
+
     # Recalculate level, tier, streak (prestige-aware)
     prestige_count = int(db.get_profile("prestige_count") or "0")
     prestige_xp = get_prestige_xp(total_xp, prestige_count)
@@ -430,7 +475,12 @@ def do_incremental_sync(db: Database) -> dict:
                 status.definition.id, status.definition.name, status.progress
             )
 
-    _write_rank_json(total_xp, level, tier, streak_info, total_unlocked, prestige_count)
+    _write_rank_json(
+        total_xp, level, tier, streak_info, total_unlocked, prestige_count,
+        er_mu=float(db.get_profile("er_mu") or "1500.0"),
+        er_phi=float(db.get_profile("er_phi") or "350.0"),
+        er_tier_name=db.get_profile("er_tier_name") or "Unrated",
+    )
     return {"ok": True, "changed": True, "total_xp": total_xp, "level": level}
 
 
@@ -510,6 +560,10 @@ def do_dashboard(db: Database) -> None:
         "member_since": profile.get("member_since", "unknown"),
         "prestige_count": int(profile.get("prestige_count", "0")),
         "historical_total_xp": int(profile.get("historical_total_xp", "0")),
+        "er_mu": float(profile.get("er_mu", "1500.0")),
+        "er_phi": float(profile.get("er_phi", "350.0")),
+        "er_sigma": float(profile.get("er_sigma", "0.06")),
+        "er_tier_name": profile.get("er_tier_name", "Unrated"),
     }
     print_dashboard(data)
 
@@ -544,6 +598,10 @@ def do_stats(db: Database) -> None:
         "model_usage": {},
         "projects": [],
         "tool_usage": {},
+        "er_mu": float(profile.get("er_mu", "1500.0")),
+        "er_phi": float(profile.get("er_phi", "350.0")),
+        "er_sigma": float(profile.get("er_sigma", "0.06")),
+        "er_tier_name": profile.get("er_tier_name", "Unrated"),
     }
 
     if stats:
@@ -605,7 +663,12 @@ def do_prestige(db: Database) -> dict:
         "freeze_count": int(profile.get("freeze_count", "0")),
     })()
     total_unlocked = sum(1 for a in db.get_all_achievements() if a["unlocked_at"])
-    _write_rank_json(total_xp, new_level, new_tier, streak_info_data, total_unlocked, new_prestige_count)
+    _write_rank_json(
+        total_xp, new_level, new_tier, streak_info_data, total_unlocked, new_prestige_count,
+        er_mu=float(profile.get("er_mu", "1500.0")),
+        er_phi=float(profile.get("er_phi", "350.0")),
+        er_tier_name=profile.get("er_tier_name", "Unrated"),
+    )
 
     result = {
         "ok": True, "prestige_count": new_prestige_count, "stars": prestige_stars(new_prestige_count),

@@ -41,6 +41,16 @@ class Database:
                 key TEXT PRIMARY KEY,
                 value TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS engagement_history (
+                date TEXT PRIMARY KEY,
+                mu REAL DEFAULT 1500.0,
+                phi REAL DEFAULT 350.0,
+                sigma REAL DEFAULT 0.06,
+                quality_score REAL DEFAULT 0.0,
+                mu_before REAL DEFAULT 1500.0,
+                outcome REAL DEFAULT 0.5
+            );
         """)
         self.conn.commit()
 
@@ -136,6 +146,50 @@ class Database:
             "SELECT * FROM achievements ORDER BY id"
         ).fetchall()
         return [dict(row) for row in rows]
+
+    def upsert_er_history(self, date: str, **kwargs: float) -> None:
+        """Insert or update ER history for a given date."""
+        existing = self.get_er_history(date)
+        if existing is None:
+            columns = ["date"] + list(kwargs.keys())
+            placeholders = ", ".join(["?"] * len(columns))
+            col_str = ", ".join(columns)
+            values = [date] + list(kwargs.values())
+            self.conn.execute(
+                f"INSERT INTO engagement_history ({col_str}) VALUES ({placeholders})",
+                values,
+            )
+        else:
+            if kwargs:
+                set_clause = ", ".join(f"{k} = ?" for k in kwargs)
+                values = list(kwargs.values()) + [date]
+                self.conn.execute(
+                    f"UPDATE engagement_history SET {set_clause} WHERE date = ?",
+                    values,
+                )
+        self.conn.commit()
+
+    def get_er_history(self, date: str) -> dict | None:
+        """Get ER history for a specific date."""
+        row = self.conn.execute(
+            "SELECT * FROM engagement_history WHERE date = ?", (date,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def get_er_history_range(self, start_date: str, end_date: str) -> list[dict]:
+        """Get ER history for a date range (inclusive), ordered by date."""
+        rows = self.conn.execute(
+            "SELECT * FROM engagement_history WHERE date >= ? AND date <= ? ORDER BY date",
+            (start_date, end_date),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_latest_er_state(self) -> dict | None:
+        """Get the most recent ER history entry."""
+        row = self.conn.execute(
+            "SELECT * FROM engagement_history ORDER BY date DESC LIMIT 1"
+        ).fetchone()
+        return dict(row) if row else None
 
     def close(self) -> None:
         """Close the database connection."""
