@@ -337,3 +337,136 @@ class TestCountWeekendSessions:
             DailyActivity(date="2025-01-12", message_count=10, session_count=1, tool_call_count=5),  # Sunday
         ]
         assert _count_weekend_sessions(activity) == 3
+
+
+# ── Leaderboard ──────────────────────────────────────────────────────────────
+
+
+class TestLeaderboard:
+    def test_setup_stores_username(self, db):
+        """Setup stores username in profile."""
+        result = do_leaderboard_setup(db, username="alice")
+        assert result["ok"] is True
+        assert result["username"] == "alice"
+        assert db.get_profile("leaderboard_username") == "alice"
+
+    def test_setup_stores_dir(self, db, tmp_path):
+        """Setup optionally sets leaderboard dir in config."""
+        config_path = tmp_path / "config.json"
+        lb_dir = tmp_path / "leaderboard"
+        lb_dir.mkdir()
+
+        with patch("claude_rank.cli.set_leaderboard_dir") as mock_set:
+            result = do_leaderboard_setup(db, username="bob", leaderboard_dir=str(lb_dir))
+            mock_set.assert_called_once()
+
+        assert result["ok"] is True
+        assert result["leaderboard_dir"] is not None
+
+    def test_export_writes_json(self, db, tmp_path):
+        """Export writes a valid JSON leaderboard entry."""
+        db.set_profile("leaderboard_username", "alice")
+        db.set_profile("total_xp", "5000")
+        db.set_profile("level", "5")
+        db.set_profile("tier_name", "Bronze")
+        db.set_profile("tier_color", "bronze")
+        db.set_profile("current_streak", "3")
+        db.set_profile("longest_streak", "7")
+        db.set_profile("prestige_count", "0")
+
+        output_file = tmp_path / "alice.leaderboard.json"
+        result = do_leaderboard_export(db, output=str(output_file))
+
+        assert result["ok"] is True
+        assert output_file.exists()
+
+        import json
+        data = json.loads(output_file.read_text())
+        assert data["username"] == "alice"
+        assert data["total_xp"] == 5000
+
+    def test_export_fails_without_username(self, db):
+        """Export fails gracefully when no username is set."""
+        result = do_leaderboard_export(db)
+        assert result["ok"] is False
+        assert result["reason"] == "no_username"
+
+    def test_export_fails_without_dir(self, db):
+        """Export fails gracefully when no dir and no --output."""
+        db.set_profile("leaderboard_username", "alice")
+        db.set_profile("total_xp", "5000")
+        db.set_profile("level", "5")
+
+        with patch("claude_rank.cli.get_leaderboard_dir", return_value=None):
+            result = do_leaderboard_export(db)
+
+        assert result["ok"] is False
+        assert result["reason"] == "no_dir"
+
+    def test_show_renders_entries(self, db, tmp_path):
+        """Show renders entries from a directory."""
+        import json
+
+        lb_dir = tmp_path / "leaderboard"
+        lb_dir.mkdir()
+
+        entry = {
+            "schema_version": 1,
+            "username": "alice",
+            "level": 10,
+            "tier": "Silver",
+            "tier_color": "silver",
+            "total_xp": 10000,
+            "current_streak": 5,
+            "longest_streak": 14,
+            "achievements_count": 8,
+            "prestige_count": 0,
+            "last_updated": "2025-01-15T00:00:00+00:00",
+        }
+        (lb_dir / "alice.leaderboard.json").write_text(json.dumps(entry))
+
+        result = do_leaderboard_show(db, directory=str(lb_dir))
+        assert result["ok"] is True
+        assert result["count"] == 1
+        assert result["entries"][0]["username"] == "alice"
+
+    def test_show_handles_empty_dir(self, db, tmp_path):
+        """Show handles an empty leaderboard directory."""
+        lb_dir = tmp_path / "leaderboard"
+        lb_dir.mkdir()
+
+        result = do_leaderboard_show(db, directory=str(lb_dir))
+        assert result["ok"] is True
+        assert result["count"] == 0
+
+    def test_show_no_dir_configured(self, db):
+        """Show fails gracefully when no directory is configured."""
+        with patch("claude_rank.cli.get_leaderboard_dir", return_value=None):
+            result = do_leaderboard_show(db)
+
+        assert result["ok"] is False
+        assert result["reason"] == "no_dir"
+
+    def test_leaderboard_parser(self):
+        """Leaderboard subcommands parse correctly."""
+        parser = build_parser()
+        args = parser.parse_args(["leaderboard", "setup", "--username", "alice"])
+        assert args.command == "leaderboard"
+        assert args.lb_command == "setup"
+        assert args.username == "alice"
+
+    def test_leaderboard_export_parser(self):
+        """Leaderboard export parses output flag."""
+        parser = build_parser()
+        args = parser.parse_args(["leaderboard", "export", "--output", "/tmp/out.json"])
+        assert args.command == "leaderboard"
+        assert args.lb_command == "export"
+        assert args.output == "/tmp/out.json"
+
+    def test_leaderboard_show_parser(self):
+        """Leaderboard show parses dir flag."""
+        parser = build_parser()
+        args = parser.parse_args(["leaderboard", "show", "--dir", "/tmp/lb"])
+        assert args.command == "leaderboard"
+        assert args.lb_command == "show"
+        assert args.dir == "/tmp/lb"
