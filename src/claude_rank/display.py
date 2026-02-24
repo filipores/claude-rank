@@ -64,11 +64,16 @@ def print_dashboard(data: dict) -> None:
     closest_achievements = data.get("closest_achievements", [])
     member_since = data.get("member_since", "unknown")
 
+    prestige_count = data.get("prestige_count", 0)
+    from claude_rank.levels import prestige_stars
+    stars = prestige_stars(prestige_count)
+    stars_suffix = f"  {stars}" if stars else ""
+
     lines: list[str] = []
 
     # Title
     lines.append("")
-    lines.append(f"  [bold {tier_color}]Level {level} - {tier_name}[/]")
+    lines.append(f"  [bold {tier_color}]Level {level} - {tier_name}{stars_suffix}[/]")
 
     # XP bar
     bar = _xp_bar(xp_in_level, xp_for_next)
@@ -281,3 +286,157 @@ def print_no_data_message() -> None:
         width=50,
     )
     console.print(panel)
+
+
+def print_prestige_result(result: dict) -> None:
+    """Print prestige success message."""
+    lines: list[str] = []
+    lines.append("")
+    lines.append(f"  [bold yellow]PRESTIGE {result.get('prestige_count', 1)} ACHIEVED![/]")
+    lines.append("")
+    lines.append(f"  Stars: {result.get('stars', '')}")
+    lines.append(f"  New Level: {result.get('new_level', 1)}")
+    lines.append(f"  Tier: {result.get('tier_name', 'Prompt Novice')}")
+    lines.append(f"  Historical XP: {format_number(result.get('historical_total_xp', 0))}")
+    lines.append("")
+
+    content = "\n".join(lines)
+    panel = Panel(
+        content,
+        title="[bold]PRESTIGE[/]",
+        box=box.ROUNDED,
+        border_style="yellow",
+        width=50,
+    )
+    console.print(panel)
+
+
+def print_prestige_not_ready(result: dict) -> None:
+    """Print message when prestige requirements are not met."""
+    lines: list[str] = []
+    lines.append("")
+    lines.append(f"  Current Level: {result.get('current_level', 1)}")
+    lines.append(f"  Max Level: {result.get('max_level', 50)}")
+    lines.append(f"  XP Needed: {format_number(result.get('xp_needed', 0))}")
+    lines.append("")
+    lines.append("  Reach max level to prestige and earn a star badge.")
+    lines.append("")
+
+    content = "\n".join(lines)
+    panel = Panel(
+        content,
+        title="[bold]Not Ready to Prestige[/]",
+        box=box.ROUNDED,
+        border_style="grey50",
+        width=50,
+    )
+    console.print(panel)
+
+
+def print_badge_result(result: dict) -> None:
+    """Print badge generation result."""
+    lines: list[str] = []
+    lines.append("")
+    lines.append(f"  Badge saved to: [bold]{result.get('output', '')}[/]")
+    lines.append(f"  Level {result.get('level', 1)} - {result.get('tier_name', 'Prompt Novice')}")
+    lines.append("")
+    lines.append("  Add to your README:")
+    lines.append("  ![Claude Rank](claude-rank-badge.svg)")
+    lines.append("")
+
+    content = "\n".join(lines)
+    panel = Panel(
+        content,
+        title="[bold]Badge Generated[/]",
+        box=box.ROUNDED,
+        border_style="green",
+        width=50,
+    )
+    console.print(panel)
+
+
+def print_wrapped(data: dict) -> None:
+    """Print wrapped summary with multiple panels."""
+    period = data.get("period", "month")
+    period_start = data.get("period_start", "")
+    period_end = data.get("period_end", "")
+
+    # Core Numbers panel
+    core_lines: list[str] = []
+    core_lines.append("")
+    core_lines.append(f"  XP Earned:    {format_number(data.get('total_xp_earned', 0))}")
+    core_lines.append(f"  Sessions:     {format_number(data.get('total_sessions', 0))}")
+    core_lines.append(f"  Messages:     {format_number(data.get('total_messages', 0))}")
+    core_lines.append(f"  Tool Calls:   {format_number(data.get('total_tool_calls', 0))}")
+    core_lines.append(f"  Active Days:  {data.get('active_days', 0)}/{data.get('total_days', 0)}")
+    core_lines.append(f"  Avg XP/Day:   {format_number(data.get('avg_xp_per_day', 0))}")
+    core_lines.append("")
+
+    core_panel = Panel(
+        "\n".join(core_lines),
+        title=f"[bold]Core Numbers ({period}: {period_start} to {period_end})[/]",
+        box=box.ROUNDED,
+        border_style="yellow",
+        width=50,
+    )
+    console.print(core_panel)
+
+    # Highlights panel
+    hl_lines: list[str] = []
+    hl_lines.append("")
+    busiest_day = data.get("busiest_day")
+    if busiest_day:
+        hl_lines.append(f"  Busiest Day:  {busiest_day} ({format_number(data.get('busiest_day_xp', 0))} XP)")
+    busiest_hour = data.get("busiest_hour")
+    if busiest_hour is not None:
+        hl_lines.append(f"  Peak Hour:    {busiest_hour:02d}:00")
+    hl_lines.append(f"  Best Streak:  {data.get('period_streak', 0)} days")
+    hl_lines.append(f"  Projects:     {data.get('projects_count', 0)}")
+    hl_lines.append("")
+
+    hl_panel = Panel(
+        "\n".join(hl_lines),
+        title="[bold]Highlights[/]",
+        box=box.ROUNDED,
+        border_style="cyan",
+        width=50,
+    )
+    console.print(hl_panel)
+
+    # Top Tools panel
+    top_tools = data.get("top_tools", [])
+    if top_tools:
+        tool_lines: list[str] = []
+        tool_lines.append("")
+        max_count = top_tools[0][1] if top_tools else 1
+        for name, count in top_tools:
+            bar = _xp_bar(count, max_count, width=15)
+            tool_lines.append(f"  {name:<12s} {bar} {format_number(count)}")
+        tool_lines.append("")
+
+        tool_panel = Panel(
+            "\n".join(tool_lines),
+            title="[bold]Top Tools[/]",
+            box=box.ROUNDED,
+            border_style="blue",
+            width=50,
+        )
+        console.print(tool_panel)
+
+    # All-Time panel
+    at_lines: list[str] = []
+    at_lines.append("")
+    at_lines.append(f"  Level:          {data.get('current_level', 1)}")
+    at_lines.append(f"  Lifetime XP:    {format_number(data.get('lifetime_xp', 0))}")
+    at_lines.append(f"  Longest Streak: {data.get('longest_streak', 0)} days")
+    at_lines.append(f"  Member Since:   {data.get('member_since', 'unknown')}")
+    at_lines.append("")
+
+    at_panel = Panel(
+        "\n".join(at_lines),
+        title="[bold]All-Time[/]",
+        box=box.ROUNDED,
+        border_style="grey50",
+        width=50,
+    )
+    console.print(at_panel)

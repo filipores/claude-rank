@@ -17,12 +17,25 @@ from claude_rank.achievements import (
 from claude_rank.db import Database
 from claude_rank.display import (
     print_achievements,
+    print_badge_result,
     print_dashboard,
     print_no_data_message,
+    print_prestige_not_ready,
+    print_prestige_result,
     print_stats,
     print_sync_result,
+    print_wrapped,
 )
-from claude_rank.levels import level_from_xp, tier_from_level, xp_progress_in_level
+from claude_rank.levels import (
+    MAX_LEVEL,
+    PRESTIGE_XP_THRESHOLD,
+    can_prestige,
+    get_prestige_xp,
+    level_from_xp,
+    prestige_stars,
+    tier_from_level,
+    xp_progress_in_level,
+)
 from claude_rank.parser import ClaudeDataParser
 from claude_rank.streaks import calculate_streak
 from claude_rank.xp import calculate_historical_xp, calculate_total_xp
@@ -40,6 +53,11 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("achievements", help="List all achievements")
     subparsers.add_parser("sync", help="Re-parse Claude Code data and update")
     subparsers.add_parser("hook", help="Incremental sync for PostToolUse hook")
+    subparsers.add_parser("prestige", help="Prestige to reset level and earn a star badge")
+    badge_parser = subparsers.add_parser("badge", help="Generate SVG badge for README")
+    badge_parser.add_argument("--output", "-o", default="claude-rank-badge.svg", help="Output file path")
+    wrapped_parser = subparsers.add_parser("wrapped", help="Show coding stats summary")
+    wrapped_parser.add_argument("--period", choices=["month", "year", "all-time"], default="month")
     return parser
 
 
@@ -64,6 +82,12 @@ def main() -> None:
             import sys
             sys.stdin.read()  # Required by hook protocol
             do_incremental_sync(db)
+        elif command == "prestige":
+            do_prestige(db)
+        elif command == "badge":
+            do_badge(db, output=args.output)
+        elif command == "wrapped":
+            do_wrapped(db, period=args.period)
     finally:
         db.close()
 
@@ -157,8 +181,10 @@ def do_sync(db: Database) -> dict:
                 streak_day=dxp.date in active_dates,
             )
 
-    # Calculate level and tier
-    level = level_from_xp(total_xp)
+    # Calculate level and tier (prestige-aware)
+    prestige_count = int(db.get_profile("prestige_count") or "0")
+    prestige_xp = get_prestige_xp(total_xp, prestige_count)
+    level = level_from_xp(prestige_xp)
     tier = tier_from_level(level)
 
     # Calculate streak
@@ -229,6 +255,9 @@ def do_sync(db: Database) -> dict:
     db.set_profile("total_tool_calls", str(total_tool_calls))
     db.set_profile("days_synced", str(len(daily_xp_list)))
     db.set_profile("last_sync", now_str)
+    db.set_profile("prestige_count", str(prestige_count))
+    historical = max(total_xp, int(db.get_profile("historical_total_xp") or "0"))
+    db.set_profile("historical_total_xp", str(historical))
     if stats.first_session_date:
         db.set_profile("member_since", stats.first_session_date)
 
@@ -244,7 +273,7 @@ def do_sync(db: Database) -> dict:
     }
 
     # Write rank.json for status line and hooks
-    _write_rank_json(total_xp, level, tier, streak_info, total_unlocked)
+    _write_rank_json(total_xp, level, tier, streak_info, total_unlocked, prestige_count)
 
     print_sync_result(result)
     return result
@@ -256,9 +285,11 @@ def _write_rank_json(
     tier: dict,
     streak_info: object,
     achievements_unlocked: int,
+    prestige_count: int = 0,
 ) -> None:
     """Write ~/.claude/rank.json for status line and SessionStart hook."""
-    xp_in_level, xp_for_next = xp_progress_in_level(total_xp)
+    prestige_xp = get_prestige_xp(total_xp, prestige_count)
+    xp_in_level, xp_for_next = xp_progress_in_level(prestige_xp)
     rank_data = {
         "level": level,
         "title": tier["name"],
@@ -272,6 +303,8 @@ def _write_rank_json(
         "freeze_count": getattr(streak_info, "freeze_count", 0),
         "achievements_unlocked": achievements_unlocked,
         "total_achievements": len(ACHIEVEMENTS),
+        "prestige_count": prestige_count,
+        "prestige_stars": prestige_stars(prestige_count),
         "last_sync": datetime.now(tz=timezone.utc).isoformat(),
     }
     rank_file = Path.home() / ".claude" / "rank.json"
@@ -330,8 +363,10 @@ def do_incremental_sync(db: Database) -> dict:
             streak_day=True,
         )
 
-    # Recalculate level, tier, streak
-    level = level_from_xp(total_xp)
+    # Recalculate level, tier, streak (prestige-aware)
+    prestige_count = int(db.get_profile("prestige_count") or "0")
+    prestige_xp = get_prestige_xp(total_xp, prestige_count)
+    level = level_from_xp(prestige_xp)
     tier = tier_from_level(level)
     streak_info = calculate_streak(active_dates, today=today_str)
 
@@ -345,6 +380,9 @@ def do_incremental_sync(db: Database) -> dict:
     db.set_profile("freeze_count", str(streak_info.freeze_count))
     db.set_profile("total_sessions", str(stats.total_sessions))
     db.set_profile("total_messages", str(stats.total_messages))
+    db.set_profile("prestige_count", str(prestige_count))
+    historical = max(total_xp, int(db.get_profile("historical_total_xp") or "0"))
+    db.set_profile("historical_total_xp", str(historical))
 
     # Check achievements
     total_tool_calls = sum(da.tool_call_count for da in stats.daily_activity)
@@ -363,7 +401,7 @@ def do_incremental_sync(db: Database) -> dict:
                 status.definition.id, status.definition.name, status.progress
             )
 
-    _write_rank_json(total_xp, level, tier, streak_info, total_unlocked)
+    _write_rank_json(total_xp, level, tier, streak_info, total_unlocked, prestige_count)
     return {"ok": True, "changed": True, "total_xp": total_xp, "level": level}
 
 
@@ -441,6 +479,8 @@ def do_dashboard(db: Database) -> None:
         "recent_achievements": recent_achievements,
         "closest_achievements": closest_achievements,
         "member_since": profile.get("member_since", "unknown"),
+        "prestige_count": int(profile.get("prestige_count", "0")),
+        "historical_total_xp": int(profile.get("historical_total_xp", "0")),
     }
     print_dashboard(data)
 
@@ -485,6 +525,116 @@ def do_stats(db: Database) -> None:
         data["tool_usage"] = parser.get_tool_usage_summary()
 
     print_stats(data)
+
+
+def _write_rank_badge(total_xp: int, level: int, tier: dict, prestige_count: int = 0) -> None:
+    """Write ~/.claude/rank-badge.svg."""
+    from claude_rank.badge import generate_badge_svg
+    svg = generate_badge_svg(
+        level=level, tier_name=tier["name"], tier_color=tier["color"],
+        prestige_count=prestige_count, total_xp=total_xp,
+    )
+    badge_path = Path.home() / ".claude" / "rank-badge.svg"
+    badge_path.write_text(svg, encoding="utf-8")
+
+
+def do_prestige(db: Database) -> dict:
+    """Prestige to reset level progress and earn a star badge."""
+    profile = db.get_all_profile()
+    total_xp = int(profile.get("total_xp", "0"))
+    prestige_count = int(profile.get("prestige_count", "0"))
+
+    if not total_xp:
+        print_no_data_message()
+        return {"ok": False, "reason": "no_data"}
+
+    if not can_prestige(total_xp, prestige_count):
+        xp_needed = (prestige_count + 1) * PRESTIGE_XP_THRESHOLD - total_xp
+        result = {
+            "ok": False, "reason": "not_ready", "xp_needed": xp_needed,
+            "current_level": int(profile.get("level", "1")), "max_level": MAX_LEVEL,
+        }
+        print_prestige_not_ready(result)
+        return result
+
+    new_prestige_count = prestige_count + 1
+    historical = max(total_xp, int(profile.get("historical_total_xp", str(total_xp))))
+    db.set_profile("prestige_count", str(new_prestige_count))
+    db.set_profile("historical_total_xp", str(historical))
+
+    prestige_xp = get_prestige_xp(total_xp, new_prestige_count)
+    new_level = level_from_xp(prestige_xp)
+    new_tier = tier_from_level(new_level)
+    db.set_profile("level", str(new_level))
+    db.set_profile("tier_name", new_tier["name"])
+    db.set_profile("tier_color", new_tier["color"])
+
+    # Rebuild streak info from profile for rank.json
+    streak_info_data = type("SI", (), {
+        "current_streak": int(profile.get("current_streak", "0")),
+        "longest_streak": int(profile.get("longest_streak", "0")),
+        "freeze_count": int(profile.get("freeze_count", "0")),
+    })()
+    total_unlocked = sum(1 for a in db.get_all_achievements() if a["unlocked_at"])
+    _write_rank_json(total_xp, new_level, new_tier, streak_info_data, total_unlocked, new_prestige_count)
+
+    result = {
+        "ok": True, "prestige_count": new_prestige_count, "stars": prestige_stars(new_prestige_count),
+        "new_level": new_level, "tier_name": new_tier["name"], "historical_total_xp": historical,
+    }
+    print_prestige_result(result)
+    return result
+
+
+def do_badge(db: Database, output: str = "claude-rank-badge.svg") -> dict:
+    """Generate an SVG badge for README."""
+    from claude_rank.badge import generate_badge_svg
+    profile = db.get_all_profile()
+    if not profile.get("total_xp"):
+        print_no_data_message()
+        return {"ok": False}
+    level = int(profile.get("level", "1"))
+    tier_name = profile.get("tier_name", "Prompt Novice")
+    tier_color = profile.get("tier_color", "grey")
+    prestige_count = int(profile.get("prestige_count", "0"))
+    total_xp = int(profile.get("total_xp", "0"))
+    svg = generate_badge_svg(
+        level=level, tier_name=tier_name, tier_color=tier_color,
+        prestige_count=prestige_count, total_xp=total_xp,
+    )
+    output_path = Path(output)
+    output_path.write_text(svg, encoding="utf-8")
+    result = {"ok": True, "output": str(output_path.resolve()), "level": level, "tier_name": tier_name}
+    print_badge_result(result)
+    return result
+
+
+def do_wrapped(db: Database, period: str = "month") -> dict:
+    """Show coding stats summary for a time period."""
+    from claude_rank.wrapped import aggregate_wrapped, get_period_dates
+    profile = db.get_all_profile()
+    if not profile.get("total_xp"):
+        print_no_data_message()
+        return {"ok": False}
+    today_str = date.today().isoformat()
+    start_date, end_date = get_period_dates(period, today=today_str)
+    daily_stats = db.get_daily_stats_range(start_date, end_date)
+    tool_usage, projects, hour_counts = {}, [], [0] * 24
+    parser = ClaudeDataParser()
+    stats = parser.parse_stats_cache()
+    if stats:
+        hour_counts = stats.hour_counts
+        projects = stats.projects
+        tool_usage = parser.get_tool_usage_summary()
+    summary = aggregate_wrapped(
+        daily_stats=daily_stats, profile=profile,
+        tool_usage=tool_usage, projects=projects, hour_counts=hour_counts,
+    )
+    summary["period"] = period
+    summary["period_start"] = start_date
+    summary["period_end"] = end_date
+    print_wrapped(summary)
+    return {"ok": True, **summary}
 
 
 def do_achievements(db: Database) -> None:
