@@ -121,6 +121,7 @@ class TestDoSync:
     def test_sync_stores_profile(self, mock_parser_cls, db):
         mock_parser = MagicMock()
         mock_parser.parse_stats_cache.return_value = self._make_mock_stats()
+        mock_parser.get_tool_usage_summary.return_value = {"Bash": 10, "Read": 5}
         mock_parser_cls.return_value = mock_parser
 
         result = do_sync(db)
@@ -136,6 +137,7 @@ class TestDoSync:
     def test_sync_stores_daily_stats(self, mock_parser_cls, db):
         mock_parser = MagicMock()
         mock_parser.parse_stats_cache.return_value = self._make_mock_stats()
+        mock_parser.get_tool_usage_summary.return_value = {"Bash": 10, "Read": 5}
         mock_parser_cls.return_value = mock_parser
 
         do_sync(db)
@@ -149,6 +151,7 @@ class TestDoSync:
     def test_sync_checks_achievements(self, mock_parser_cls, db):
         mock_parser = MagicMock()
         mock_parser.parse_stats_cache.return_value = self._make_mock_stats()
+        mock_parser.get_tool_usage_summary.return_value = {"Bash": 10, "Read": 5}
         mock_parser_cls.return_value = mock_parser
 
         do_sync(db)
@@ -162,6 +165,7 @@ class TestDoSync:
     def test_sync_returns_result_dict(self, mock_parser_cls, db):
         mock_parser = MagicMock()
         mock_parser.parse_stats_cache.return_value = self._make_mock_stats()
+        mock_parser.get_tool_usage_summary.return_value = {"Bash": 10, "Read": 5}
         mock_parser_cls.return_value = mock_parser
 
         result = do_sync(db)
@@ -189,6 +193,7 @@ class TestDoSync:
         """Running sync twice with same data should not duplicate."""
         mock_parser = MagicMock()
         mock_parser.parse_stats_cache.return_value = self._make_mock_stats()
+        mock_parser.get_tool_usage_summary.return_value = {"Bash": 10, "Read": 5}
         mock_parser_cls.return_value = mock_parser
 
         result1 = do_sync(db)

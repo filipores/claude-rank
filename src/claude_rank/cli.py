@@ -63,12 +63,29 @@ def main() -> None:
         db.close()
 
 
-def _build_achievement_stats(stats_obj: object, streak_info: object, tool_calls: int) -> dict:
+def _count_weekend_sessions(daily_activity: list) -> int:
+    """Count sessions that occurred on Saturday (5) or Sunday (6)."""
+    count = 0
+    for da in daily_activity:
+        try:
+            d = date.fromisoformat(da.date)
+            if d.weekday() >= 5:
+                count += da.session_count
+        except (ValueError, AttributeError):
+            continue
+    return count
+
+
+def _build_achievement_stats(
+    stats_obj: object, streak_info: object, tool_calls: int, total_xp: int = 0, tool_usage: dict | None = None
+) -> dict:
     """Build stats dict for achievement checking.
 
     stats_obj: ClaudeStats from parser
     streak_info: StreakInfo from streaks module
     tool_calls: total tool calls across all daily activities
+    total_xp: total XP earned
+    tool_usage: tool usage summary dict from parser
     """
     hour_counts = getattr(stats_obj, "hour_counts", [0] * 24)
     night_sessions = sum(hour_counts[0:5])  # hours 0-4
@@ -84,6 +101,10 @@ def _build_achievement_stats(stats_obj: object, streak_info: object, tool_calls:
         "longest_streak": getattr(streak_info, "longest_streak", 0),
         "unique_projects": len(getattr(stats_obj, "projects", [])),
         "longest_session_messages": getattr(stats_obj, "longest_session_messages", 0),
+        "total_xp": total_xp,
+        "bash_count": (tool_usage or {}).get("Bash", 0),
+        "task_count": (tool_usage or {}).get("Task", 0),
+        "weekend_sessions": _count_weekend_sessions(getattr(stats_obj, "daily_activity", [])),
     }
 
 
@@ -143,7 +164,12 @@ def do_sync(db: Database) -> dict:
     total_tool_calls = sum(da.tool_call_count for da in stats.daily_activity)
 
     # Check achievements
-    achievement_stats = _build_achievement_stats(stats, streak_info, total_tool_calls)
+    tool_usage_data = parser.get_tool_usage_summary()
+    achievement_stats = _build_achievement_stats(
+        stats, streak_info, total_tool_calls,
+        total_xp=total_xp,
+        tool_usage=tool_usage_data,
+    )
 
     # Get previous achievement state for comparison
     previous_statuses: list[AchievementStatus] = []
@@ -240,6 +266,7 @@ def _write_rank_json(
         "longest_streak": getattr(streak_info, "longest_streak", 0),
         "freeze_count": getattr(streak_info, "freeze_count", 0),
         "achievements_unlocked": achievements_unlocked,
+        "total_achievements": len(ACHIEVEMENTS),
         "last_sync": datetime.now(tz=timezone.utc).isoformat(),
     }
     rank_file = Path.home() / ".claude" / "rank.json"

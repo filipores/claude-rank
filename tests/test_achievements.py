@@ -96,23 +96,27 @@ class TestCheckAchievements:
 
     def test_all_unlocked(self):
         stats = {
-            "total_sessions": 100,
-            "total_messages": 1000,
-            "total_tool_calls": 10000,
-            "night_sessions": 1,
+            "total_sessions": 1000,
+            "total_messages": 10000,
+            "total_tool_calls": 50000,
+            "night_sessions": 50,
             "early_sessions": 1,
             "current_streak": 7,
-            "longest_streak": 30,
-            "unique_projects": 5,
-            "longest_session_messages": 100,
+            "longest_streak": 100,
+            "unique_projects": 50,
+            "longest_session_messages": 500,
+            "total_xp": 200000,
+            "bash_count": 1000,
+            "task_count": 100,
+            "weekend_sessions": 10,
         }
         results = check_achievements(stats)
         for r in results:
             assert r.unlocked is True
 
-    def test_returns_10_achievements(self):
+    def test_returns_25_achievements(self):
         results = check_achievements({})
-        assert len(results) == 10
+        assert len(results) == 25
 
     def test_exact_threshold_unlocks(self):
         """Achievement should unlock at exactly the target value."""
@@ -211,15 +215,19 @@ class TestGetClosestAchievements:
 
     def test_all_unlocked_returns_empty(self):
         stats = {
-            "total_sessions": 100,
-            "total_messages": 1000,
-            "total_tool_calls": 10000,
-            "night_sessions": 1,
+            "total_sessions": 1000,
+            "total_messages": 10000,
+            "total_tool_calls": 50000,
+            "night_sessions": 50,
             "early_sessions": 1,
             "current_streak": 7,
-            "longest_streak": 30,
-            "unique_projects": 5,
-            "longest_session_messages": 100,
+            "longest_streak": 100,
+            "unique_projects": 50,
+            "longest_session_messages": 500,
+            "total_xp": 200000,
+            "bash_count": 1000,
+            "task_count": 100,
+            "weekend_sessions": 10,
         }
         results = check_achievements(stats)
         closest = get_closest_achievements(results)
@@ -239,8 +247,8 @@ class TestGetClosestAchievements:
 class TestAchievementDefinitions:
     """Tests for the ACHIEVEMENTS constant."""
 
-    def test_ten_achievements_defined(self):
-        assert len(ACHIEVEMENTS) == 10
+    def test_25_achievements_defined(self):
+        assert len(ACHIEVEMENTS) == 25
 
     def test_unique_ids(self):
         ids = [a.id for a in ACHIEVEMENTS]
@@ -259,6 +267,14 @@ class TestAchievementDefinitions:
             "hello_world", "centurion", "thousand_voices", "tool_master",
             "night_owl", "early_bird", "on_fire", "iron_will",
             "polyglot", "marathon_runner",
+            # Uncommon
+            "veteran", "ten_thousand_voices", "globetrotter", "weekend_warrior", "bash_master",
+            # Rare
+            "the_legend", "code_surgeon", "ultramarathon", "on_a_roll",
+            # Epic
+            "zero_defect", "the_inception", "night_shift", "century_streak",
+            # Legendary
+            "omega_grind", "world_builder",
         }
         actual = {a.id for a in ACHIEVEMENTS}
         assert actual == expected

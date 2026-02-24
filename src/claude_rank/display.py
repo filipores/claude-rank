@@ -193,6 +193,7 @@ def print_achievements(achievements: list[dict]) -> None:
     """
     rarity_colors = {
         "common": "white",
+        "uncommon": "green",
         "rare": "blue",
         "epic": "magenta",
         "legendary": "yellow",
