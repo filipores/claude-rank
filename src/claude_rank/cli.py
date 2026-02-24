@@ -15,16 +15,28 @@ from claude_rank.achievements import (
     get_newly_unlocked,
 )
 from claude_rank.db import Database
+from claude_rank.config import get_leaderboard_dir, set_leaderboard_dir
 from claude_rank.display import (
+    console,
     print_achievements,
     print_badge_result,
     print_dashboard,
+    print_leaderboard,
+    print_leaderboard_export_result,
+    print_leaderboard_setup_result,
     print_no_data_message,
     print_prestige_not_ready,
     print_prestige_result,
     print_stats,
     print_sync_result,
     print_wrapped,
+)
+from claude_rank.leaderboard import (
+    build_entry,
+    default_export_path,
+    load_all_entries,
+    rank_entries,
+    write_entry,
 )
 from claude_rank.levels import (
     MAX_LEVEL,
@@ -58,6 +70,15 @@ def build_parser() -> argparse.ArgumentParser:
     badge_parser.add_argument("--output", "-o", default="claude-rank-badge.svg", help="Output file path")
     wrapped_parser = subparsers.add_parser("wrapped", help="Show coding stats summary")
     wrapped_parser.add_argument("--period", choices=["month", "year", "all-time"], default="month")
+    lb_parser = subparsers.add_parser("leaderboard", help="Team leaderboard (opt-in)")
+    lb_sub = lb_parser.add_subparsers(dest="lb_command")
+    lb_setup_p = lb_sub.add_parser("setup", help="Configure username and shared directory")
+    lb_setup_p.add_argument("--username", "-u", required=True, help="Your display name")
+    lb_setup_p.add_argument("--dir", "-d", default=None, help="Path to shared leaderboard directory")
+    lb_export_p = lb_sub.add_parser("export", help="Export your stats to shared directory")
+    lb_export_p.add_argument("--output", "-o", default=None, help="Override output path")
+    lb_show_p = lb_sub.add_parser("show", help="Show team leaderboard")
+    lb_show_p.add_argument("--dir", "-d", default=None, help="Override leaderboard directory")
     return parser
 
 
@@ -88,6 +109,14 @@ def main() -> None:
             do_badge(db, output=args.output)
         elif command == "wrapped":
             do_wrapped(db, period=args.period)
+        elif command == "leaderboard":
+            lb_cmd = getattr(args, "lb_command", None)
+            if lb_cmd == "setup":
+                do_leaderboard_setup(db, username=args.username, leaderboard_dir=args.dir)
+            elif lb_cmd == "export":
+                do_leaderboard_export(db, output=getattr(args, "output", None))
+            else:
+                do_leaderboard_show(db, directory=getattr(args, "dir", None))
     finally:
         db.close()
 
@@ -664,3 +693,71 @@ def do_achievements(db: Database) -> None:
         })
 
     print_achievements(achievements_data)
+
+
+def do_leaderboard_setup(db: Database, username: str, leaderboard_dir: str | None = None) -> dict:
+    """Configure leaderboard username and shared directory."""
+    db.set_profile("leaderboard_username", username)
+    result: dict = {"ok": True, "username": username, "leaderboard_dir": None}
+    if leaderboard_dir:
+        expanded = Path(leaderboard_dir).expanduser().resolve()
+        set_leaderboard_dir(expanded)
+        result["leaderboard_dir"] = str(expanded)
+    print_leaderboard_setup_result(result)
+    return result
+
+
+def do_leaderboard_export(db: Database, output: str | None = None) -> dict:
+    """Export current stats to a leaderboard entry file."""
+    profile = db.get_all_profile()
+    username = profile.get("leaderboard_username")
+    if not username:
+        console.print("[red]No username set. Run: claude-rank leaderboard setup --username <name>[/]")
+        return {"ok": False, "reason": "no_username"}
+
+    achievements_count = sum(1 for a in db.get_all_achievements() if a["unlocked_at"])
+    entry = build_entry(profile, achievements_count)
+
+    if output:
+        output_path = Path(output)
+    else:
+        lb_dir = get_leaderboard_dir()
+        if lb_dir is None:
+            console.print(
+                "[red]No leaderboard directory set. "
+                "Use --output or run: claude-rank leaderboard setup --dir <path>[/]"
+            )
+            return {"ok": False, "reason": "no_dir"}
+        output_path = default_export_path(username, lb_dir)
+
+    write_entry(entry, output_path)
+    result = {"ok": True, "output": str(output_path), "entry": entry}
+    print_leaderboard_export_result(result)
+    return result
+
+
+def do_leaderboard_show(db: Database, directory: str | None = None) -> dict:
+    """Show team leaderboard from shared directory."""
+    if directory:
+        lb_dir = Path(directory).expanduser().resolve()
+    else:
+        lb_dir = get_leaderboard_dir()
+
+    if lb_dir is None:
+        console.print(
+            "[red]No leaderboard directory configured. "
+            "Run: claude-rank leaderboard setup --dir <path>[/]"
+        )
+        return {"ok": False, "reason": "no_dir"}
+
+    if not lb_dir.is_dir():
+        console.print(f"[red]Directory not found: {lb_dir}[/]")
+        return {"ok": False, "reason": "dir_not_found"}
+
+    entries = load_all_entries(lb_dir)
+    ranked = rank_entries(entries)
+
+    profile = db.get_all_profile()
+    username = profile.get("leaderboard_username")
+    print_leaderboard(ranked, highlight_username=username)
+    return {"ok": True, "entries": ranked, "count": len(ranked)}

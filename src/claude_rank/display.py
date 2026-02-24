@@ -448,3 +448,104 @@ def print_wrapped(data: dict) -> None:
         width=50,
     )
     console.print(at_panel)
+
+
+def print_leaderboard_setup_result(result: dict) -> None:
+    """Print confirmation after leaderboard setup."""
+    lines: list[str] = []
+    lines.append("")
+    lines.append(f"  Username:  [bold]{result.get('username', '')}[/]")
+    lb_dir = result.get("leaderboard_dir")
+    if lb_dir:
+        lines.append(f"  Directory: [bold]{lb_dir}[/]")
+    lines.append("")
+    lines.append("  Next steps:")
+    lines.append("  1. [bold]claude-rank leaderboard export[/] — publish your stats")
+    lines.append("  2. [bold]claude-rank leaderboard show[/]   — view rankings")
+    lines.append("")
+
+    content = "\n".join(lines)
+    panel = Panel(
+        content,
+        title="[bold]Leaderboard Setup[/]",
+        box=box.ROUNDED,
+        border_style="green",
+        width=50,
+    )
+    console.print(panel)
+
+
+def print_leaderboard_export_result(result: dict) -> None:
+    """Print confirmation after exporting leaderboard entry."""
+    entry = result.get("entry", {})
+    lines: list[str] = []
+    lines.append("")
+    lines.append(f"  Exported to: [bold]{result.get('output', '')}[/]")
+    lines.append(f"  Level {entry.get('level', 1)} - {entry.get('tier', 'Bronze')}")
+    lines.append(f"  Total XP: {format_number(entry.get('total_xp', 0))}")
+    lines.append(f"  Streak: {entry.get('current_streak', 0)} days")
+    lines.append(f"  Achievements: {entry.get('achievements_count', 0)}")
+    lines.append("")
+
+    content = "\n".join(lines)
+    panel = Panel(
+        content,
+        title="[bold]Leaderboard Entry Exported[/]",
+        box=box.ROUNDED,
+        border_style="green",
+        width=50,
+    )
+    console.print(panel)
+
+
+def print_leaderboard(entries: list[dict], highlight_username: str | None = None) -> None:
+    """Print a ranked leaderboard table."""
+    if not entries:
+        panel = Panel(
+            "\n  No entries found. Ask your team to run [bold]claude-rank leaderboard export[/].\n",
+            title="[bold]Team Leaderboard[/]",
+            box=box.ROUNDED,
+            border_style="cyan",
+            width=60,
+        )
+        console.print(panel)
+        return
+
+    table = Table(
+        title="Team Leaderboard",
+        box=box.ROUNDED,
+        border_style="cyan",
+        show_header=True,
+        header_style="bold",
+    )
+    table.add_column("#", width=4, justify="right")
+    table.add_column("Username", min_width=15)
+    table.add_column("Level", width=7, justify="right")
+    table.add_column("Tier", min_width=12)
+    table.add_column("Total XP", width=12, justify="right")
+    table.add_column("Streak", width=8, justify="right")
+    table.add_column("Ach.", width=6, justify="right")
+
+    for entry in entries:
+        username = entry.get("username", "?")
+        is_you = username == highlight_username
+        style = "bold" if is_you else ""
+        name_display = f"{username} (you)" if is_you else username
+
+        prestige = entry.get("prestige_count", 0)
+        tier_display = entry.get("tier", "Bronze")
+        if prestige > 0:
+            tier_display += " " + "\u2605" * prestige
+
+        table.add_row(
+            str(entry.get("rank", "")),
+            name_display,
+            str(entry.get("level", 1)),
+            tier_display,
+            format_number(entry.get("total_xp", 0)),
+            f"{entry.get('current_streak', 0)}d",
+            str(entry.get("achievements_count", 0)),
+            style=style,
+        )
+
+    console.print(table)

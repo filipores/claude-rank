@@ -139,6 +139,45 @@ def get_badge() -> dict[str, Any]:
         db.close()
 
 
+@mcp.tool()
+def get_leaderboard(directory: str = "") -> dict[str, Any]:
+    """Read team leaderboard from a shared directory.
+
+    directory: path to directory containing *.leaderboard.json files.
+               If empty, uses the configured leaderboard directory.
+    """
+    from claude_rank.config import get_leaderboard_dir
+    from claude_rank.leaderboard import load_all_entries, rank_entries
+
+    if directory:
+        lb_dir = Path(directory)
+    else:
+        lb_dir = get_leaderboard_dir()
+
+    if lb_dir is None or not lb_dir.is_dir():
+        return {
+            "error": "No leaderboard directory found. "
+            "Run: claude-rank leaderboard setup --dir /path/to/shared/dir"
+        }
+
+    entries = load_all_entries(lb_dir)
+    ranked = rank_entries(entries)
+
+    your_rank = None
+    db = _get_db()
+    try:
+        username = db.get_profile("leaderboard_username")
+    finally:
+        db.close()
+    if username:
+        for e in ranked:
+            if e.get("username") == username:
+                your_rank = e.get("rank")
+                break
+
+    return {"entries": ranked, "count": len(ranked), "your_rank": your_rank}
+
+
 def main() -> None:
     mcp.run()
 

@@ -1,7 +1,7 @@
 """Tests for the MCP server tool functions."""
 from unittest.mock import MagicMock, patch
 
-from claude_rank.mcp_server import get_achievements, get_badge, get_rank, get_wrapped
+from claude_rank.mcp_server import get_achievements, get_badge, get_leaderboard, get_rank, get_wrapped
 
 
 class TestGetRank:
@@ -140,3 +140,50 @@ class TestGetBadge:
         result = get_badge()
         assert "error" in result
         mock_db.close.assert_called_once()
+
+
+class TestGetLeaderboard:
+    def test_no_directory_configured(self):
+        """When no directory is set and none provided, returns error."""
+        with patch("claude_rank.mcp_server._get_db") as mock_get_db:
+            mock_db = MagicMock()
+            mock_db.get_profile.return_value = None
+            mock_get_db.return_value = mock_db
+            # Also patch get_leaderboard_dir to return None
+            with patch("claude_rank.leaderboard.load_all_entries", return_value=[]):
+                with patch("claude_rank.config.get_leaderboard_dir", return_value=None):
+                    result = get_leaderboard(directory="")
+                    assert "error" in result
+
+    def test_with_valid_directory(self, tmp_path):
+        """When directory has entries, returns ranked list."""
+        import json as json_mod
+        # Create leaderboard entries
+        entry1 = {"schema_version": 1, "username": "alice", "total_xp": 5000,
+                   "longest_streak": 10, "achievements_count": 5}
+        entry2 = {"schema_version": 1, "username": "bob", "total_xp": 3000,
+                   "longest_streak": 5, "achievements_count": 3}
+        (tmp_path / "alice.leaderboard.json").write_text(json_mod.dumps(entry1))
+        (tmp_path / "bob.leaderboard.json").write_text(json_mod.dumps(entry2))
+
+        with patch("claude_rank.mcp_server._get_db") as mock_get_db:
+            mock_db = MagicMock()
+            mock_db.get_profile.return_value = "alice"
+            mock_get_db.return_value = mock_db
+            result = get_leaderboard(directory=str(tmp_path))
+            assert result["count"] == 2
+            assert result["entries"][0]["username"] == "alice"
+            assert result["entries"][0]["rank"] == 1
+            assert result["your_rank"] == 1
+            mock_db.close.assert_called_once()
+
+    def test_empty_directory(self, tmp_path):
+        """Empty directory returns zero entries."""
+        with patch("claude_rank.mcp_server._get_db") as mock_get_db:
+            mock_db = MagicMock()
+            mock_db.get_profile.return_value = None
+            mock_get_db.return_value = mock_db
+            result = get_leaderboard(directory=str(tmp_path))
+            assert result["count"] == 0
+            assert result["entries"] == []
+            assert result["your_rank"] is None

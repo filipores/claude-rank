@@ -11,6 +11,9 @@ from claude_rank.cli import (
     build_parser,
     do_achievements,
     do_dashboard,
+    do_leaderboard_export,
+    do_leaderboard_setup,
+    do_leaderboard_show,
     do_sync,
     do_stats,
 )
