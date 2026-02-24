@@ -1,0 +1,7 @@
+{
+  "name": "claude-rank",
+  "description": "Gamify your Claude Code usage with XP, levels, achievements, and streaks. Tracks sessions, tool calls, and streaks — all stored locally.",
+  "author": {
+    "name": "filipores"
+  }
+}

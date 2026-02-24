@@ -1,0 +1,27 @@
+{
+  "description": "claude-rank hooks: injects rank context at session start and tracks XP after tool use",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.sh ${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
