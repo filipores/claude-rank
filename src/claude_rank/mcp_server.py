@@ -6,7 +6,7 @@ Run via: python3 -m claude_rank.mcp_server
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -49,6 +49,71 @@ def get_rank() -> dict[str, Any]:
             "freeze_count": int(profile.get("freeze_count", "0")),
             "prestige_count": prestige_count,
             "prestige_stars": prestige_stars(prestige_count),
+        }
+    finally:
+        db.close()
+
+
+@mcp.tool()
+def get_engagement_rating() -> dict[str, Any]:
+    """Get current Engagement Rating: mu, phi, sigma, tier, and recent trend."""
+    rank_file = Path.home() / ".claude" / "rank.json"
+    if rank_file.exists():
+        try:
+            data = json.loads(rank_file.read_text(encoding="utf-8"))
+            if "er_mu" in data:
+                er_mu = float(data["er_mu"])
+                er_phi = float(data.get("er_phi", 350.0))
+                er_sigma = float(data.get("er_sigma", 0.06))
+                er_tier_name = data.get("er_tier_name", "Unrated")
+                confidence_pct = max(0, int(100 - (er_phi / 350.0) * 100))
+                result = {
+                    "er_mu": er_mu,
+                    "er_phi": er_phi,
+                    "er_sigma": er_sigma,
+                    "er_tier_name": er_tier_name,
+                    "confidence_pct": confidence_pct,
+                }
+                # Get recent trend from DB
+                db = _get_db()
+                try:
+                    today = date.today()
+                    start = (today - timedelta(days=7)).isoformat()
+                    end = today.isoformat()
+                    history = db.get_er_history_range(start, end)
+                    result["recent_trend"] = [
+                        {"date": h["date"], "mu": h["mu"], "quality": h["quality_score"]}
+                        for h in history
+                    ]
+                finally:
+                    db.close()
+                return result
+        except Exception:
+            pass
+    db = _get_db()
+    try:
+        profile = db.get_all_profile()
+        er_mu = float(profile.get("er_mu", 0))
+        if not er_mu:
+            return {"error": "No engagement rating data yet. Run claude-rank sync first."}
+        er_phi = float(profile.get("er_phi", 350.0))
+        er_sigma = float(profile.get("er_sigma", 0.06))
+        er_tier_name = profile.get("er_tier_name", "Unrated")
+        confidence_pct = max(0, int(100 - (er_phi / 350.0) * 100))
+        today = date.today()
+        start = (today - timedelta(days=7)).isoformat()
+        end = today.isoformat()
+        history = db.get_er_history_range(start, end)
+        return {
+            "er_mu": er_mu,
+            "er_phi": er_phi,
+            "er_sigma": er_sigma,
+            "er_tier_name": er_tier_name,
+            "confidence_pct": confidence_pct,
+            "recent_trend": [
+                {"date": h["date"], "mu": h["mu"], "quality": h["quality_score"]}
+                for h in history
+            ],
         }
     finally:
         db.close()

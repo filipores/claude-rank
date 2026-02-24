@@ -102,6 +102,18 @@ def print_dashboard(data: dict) -> None:
         f"\U0001f4ac Messages: {format_number(total_messages)}"
     )
 
+    # Engagement Rating
+    er_mu = data.get("er_mu", 0.0)
+    er_phi = data.get("er_phi", 350.0)
+    er_tier = data.get("er_tier_name", "Unrated")
+    if er_mu:
+        confidence = max(0, int(100 - (er_phi / 350.0) * 100))
+        lines.append("")
+        lines.append(
+            f"  \U0001f3af ER: {er_mu:.0f} ({er_tier})  "
+            f"Confidence: {confidence}%  RD: {er_phi:.0f}"
+        )
+
     # Recent achievements
     if recent_achievements:
         lines.append("")
@@ -187,6 +199,14 @@ def print_stats(data: dict) -> None:
         for model, tokens in sorted(model_usage.items(), key=lambda x: x[1], reverse=True):
             table.add_row(f"  {model}", format_number(tokens))
 
+    # Engagement Rating
+    table.add_section()
+    table.add_row("[bold]Engagement Rating[/]", "")
+    table.add_row("  ER (mu)", f"{data.get('er_mu', 1500):.0f}")
+    table.add_row("  Deviation (phi)", f"{data.get('er_phi', 350):.0f}")
+    table.add_row("  Volatility (sigma)", f"{data.get('er_sigma', 0.06):.4f}")
+    table.add_row("  ER Tier", data.get("er_tier_name", "Unrated"))
+
     # Top tool calls
     tool_usage = data.get("tool_usage", {})
     if tool_usage:
@@ -262,6 +282,11 @@ def print_sync_result(stats: dict) -> None:
     lines.append(f"  Total XP:        {format_number(stats.get('total_xp', 0))}")
     lines.append(f"  Level:           {stats.get('level', 1)}")
     lines.append(f"  Tier:            {stats.get('tier_name', 'Bronze')}")
+
+    er_mu = stats.get("er_mu")
+    if er_mu:
+        er_tier = stats.get("er_tier_name", "Unrated")
+        lines.append(f"  ER:              {er_mu:.0f} ({er_tier})")
 
     new_achievements = stats.get("new_achievements", [])
     lines.append(f"  Achievements:    {stats.get('total_achievements_unlocked', 0)} unlocked")
