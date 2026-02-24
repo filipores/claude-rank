@@ -71,3 +71,29 @@ def xp_progress_in_level(total_xp: int) -> tuple[int, int]:
 
     xp_needed = xp_for_level(current_level)
     return (xp_in_level, xp_needed)
+
+
+PRESTIGE_XP_THRESHOLD: int = cumulative_xp_for_level(MAX_LEVEL)
+
+
+def get_prestige_xp(total_xp: int, prestige_count: int) -> int:
+    """Return XP within the current prestige cycle.
+    For prestige_count=0, returns total_xp unchanged.
+    For prestige_count=1, returns total_xp - PRESTIGE_XP_THRESHOLD.
+    """
+    if prestige_count <= 0:
+        return total_xp
+    return total_xp - (prestige_count * PRESTIGE_XP_THRESHOLD)
+
+
+def prestige_stars(prestige_count: int) -> str:
+    """Return star characters: 1 -> '★', 3 -> '★★★', 0 -> ''."""
+    if prestige_count <= 0:
+        return ""
+    return "★" * prestige_count
+
+
+def can_prestige(total_xp: int, prestige_count: int) -> bool:
+    """Return True if user has enough XP to prestige again."""
+    required = (prestige_count + 1) * PRESTIGE_XP_THRESHOLD
+    return total_xp >= required
