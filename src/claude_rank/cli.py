@@ -39,6 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("stats", help="Detailed stats breakdown")
     subparsers.add_parser("achievements", help="List all achievements")
     subparsers.add_parser("sync", help="Re-parse Claude Code data and update")
+    subparsers.add_parser("hook", help="Incremental sync for PostToolUse hook")
     return parser
 
 
@@ -59,6 +60,10 @@ def main() -> None:
             do_stats(db)
         elif command == "achievements":
             do_achievements(db)
+        elif command == "hook":
+            import sys
+            sys.stdin.read()  # Required by hook protocol
+            do_incremental_sync(db)
     finally:
         db.close()
 
@@ -271,6 +276,95 @@ def _write_rank_json(
     }
     rank_file = Path.home() / ".claude" / "rank.json"
     rank_file.write_text(json.dumps(rank_data, indent=2) + "\n")
+
+
+def do_incremental_sync(db: Database) -> dict:
+    """Lightweight sync for today only. For PostToolUse hook calls."""
+    from datetime import date as date_cls
+
+    parser = ClaudeDataParser()
+    stats = parser.parse_stats_cache()
+
+    if stats is None:
+        return {"ok": False}
+
+    today_str = date_cls.today().isoformat()
+
+    today_activity = next(
+        (da for da in stats.daily_activity if da.date == today_str),
+        None,
+    )
+
+    if today_activity is None or today_activity.session_count == 0:
+        return {"ok": True, "changed": False}
+
+    # Get previous total XP
+    prev_total_xp = int(db.get_profile("total_xp") or "0")
+
+    # Calculate all daily XP to get accurate total
+    active_dates = {da.date for da in stats.daily_activity if da.session_count > 0}
+    all_daily_dicts = [
+        {
+            "date": da.date,
+            "messageCount": da.message_count,
+            "sessionCount": da.session_count,
+            "toolCallCount": da.tool_call_count,
+        }
+        for da in stats.daily_activity
+    ]
+    daily_xp_list = calculate_historical_xp(all_daily_dicts, {"active_dates": active_dates})
+    total_xp = calculate_total_xp(daily_xp_list)
+
+    if total_xp == prev_total_xp:
+        return {"ok": True, "changed": False}
+
+    # Upsert today's row
+    today_xp = next((d for d in daily_xp_list if d.date == today_str), None)
+    if today_xp:
+        db.upsert_daily_stats(
+            today_str,
+            total_xp=today_xp.final_xp,
+            messages=today_activity.message_count,
+            sessions=today_activity.session_count,
+            tool_calls=today_activity.tool_call_count,
+            streak_day=True,
+        )
+
+    # Recalculate level, tier, streak
+    level = level_from_xp(total_xp)
+    tier = tier_from_level(level)
+    streak_info = calculate_streak(active_dates, today=today_str)
+
+    # Update profile
+    db.set_profile("total_xp", str(total_xp))
+    db.set_profile("level", str(level))
+    db.set_profile("tier_name", tier["name"])
+    db.set_profile("tier_color", tier["color"])
+    db.set_profile("current_streak", str(streak_info.current_streak))
+    db.set_profile("longest_streak", str(streak_info.longest_streak))
+    db.set_profile("freeze_count", str(streak_info.freeze_count))
+    db.set_profile("total_sessions", str(stats.total_sessions))
+    db.set_profile("total_messages", str(stats.total_messages))
+
+    # Check achievements
+    total_tool_calls = sum(da.tool_call_count for da in stats.daily_activity)
+    achievement_stats = _build_achievement_stats(stats, streak_info, total_tool_calls, total_xp=total_xp)
+    current_statuses = check_achievements(achievement_stats)
+    now_str = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
+    total_unlocked = 0
+    for status in current_statuses:
+        if status.unlocked:
+            total_unlocked += 1
+            existing = db.get_achievement(status.definition.id)
+            if not (existing and existing["unlocked_at"]):
+                db.unlock_achievement(status.definition.id, status.definition.name, now_str)
+        else:
+            db.update_achievement_progress(
+                status.definition.id, status.definition.name, status.progress
+            )
+
+    _write_rank_json(total_xp, level, tier, streak_info, total_unlocked)
+    return {"ok": True, "changed": True, "total_xp": total_xp, "level": level}
 
 
 def do_dashboard(db: Database) -> None:
