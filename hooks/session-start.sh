@@ -4,7 +4,7 @@ command -v jq >/dev/null 2>&1 || exit 0
 [ ! -f "$RANK_FILE" ] && exit 0
 
 LEVEL=$(jq -r '.level // 1' "$RANK_FILE")
-TITLE=$(jq -r '.title // "Prompt Novice"' "$RANK_FILE")
+TITLE=$(jq -r '.title // "Bronze"' "$RANK_FILE")
 TOTAL_XP=$(jq -r '.total_xp // 0' "$RANK_FILE")
 STREAK=$(jq -r '.current_streak // 0' "$RANK_FILE")
 ACHIEVEMENTS=$(jq -r '.achievements_unlocked // 0' "$RANK_FILE")

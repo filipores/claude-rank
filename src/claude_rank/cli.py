@@ -147,7 +147,7 @@ def do_sync(db: Database) -> dict:
 
     if stats is None:
         print_no_data_message()
-        return {"days_synced": 0, "total_xp": 0, "level": 1, "tier_name": "Prompt Novice"}
+        return {"days_synced": 0, "total_xp": 0, "level": 1, "tier_name": "Bronze"}
 
     # Build daily activity dicts for XP calculation
     active_dates = {da.date for da in stats.daily_activity if da.session_count > 0}
@@ -594,8 +594,8 @@ def do_badge(db: Database, output: str = "claude-rank-badge.svg") -> dict:
         print_no_data_message()
         return {"ok": False}
     level = int(profile.get("level", "1"))
-    tier_name = profile.get("tier_name", "Prompt Novice")
-    tier_color = profile.get("tier_color", "grey")
+    tier_name = profile.get("tier_name", "Bronze")
+    tier_color = profile.get("tier_color", "bronze")
     prestige_count = int(profile.get("prestige_count", "0"))
     total_xp = int(profile.get("total_xp", "0"))
     svg = generate_badge_svg(

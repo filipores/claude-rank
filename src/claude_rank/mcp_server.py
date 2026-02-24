@@ -125,8 +125,8 @@ def get_badge() -> dict[str, Any]:
         if not profile.get("total_xp"):
             return {"error": "No data yet."}
         level = int(profile.get("level", "1"))
-        tier_name = profile.get("tier_name", "Prompt Novice")
-        tier_color = profile.get("tier_color", "grey")
+        tier_name = profile.get("tier_name", "Bronze")
+        tier_color = profile.get("tier_color", "bronze")
         prestige_count = int(profile.get("prestige_count", "0"))
         total_xp = int(profile.get("total_xp", "0"))
         svg = generate_badge_svg(

@@ -304,7 +304,7 @@ def print_prestige_result(result: dict) -> None:
     lines.append("")
     lines.append(f"  Stars: {result.get('stars', '')}")
     lines.append(f"  New Level: {result.get('new_level', 1)}")
-    lines.append(f"  Tier: {result.get('tier_name', 'Prompt Novice')}")
+    lines.append(f"  Tier: {result.get('tier_name', 'Bronze')}")
     lines.append(f"  Historical XP: {format_number(result.get('historical_total_xp', 0))}")
     lines.append("")
 
@@ -346,7 +346,7 @@ def print_badge_result(result: dict) -> None:
     lines: list[str] = []
     lines.append("")
     lines.append(f"  Badge saved to: [bold]{result.get('output', '')}[/]")
-    lines.append(f"  Level {result.get('level', 1)} - {result.get('tier_name', 'Prompt Novice')}")
+    lines.append(f"  Level {result.get('level', 1)} - {result.get('tier_name', 'Bronze')}")
     lines.append("")
     lines.append("  Add to your README:")
     lines.append("  ![Claude Rank](claude-rank-badge.svg)")
