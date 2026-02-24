@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import json
 from datetime import date, datetime, timezone
+from pathlib import Path
 
 from claude_rank.achievements import (
     ACHIEVEMENTS,
@@ -210,8 +212,38 @@ def do_sync(db: Database) -> dict:
         "new_achievements": [a.name for a in newly_unlocked],
     }
 
+    # Write rank.json for status line and hooks
+    _write_rank_json(total_xp, level, tier, streak_info, total_unlocked)
+
     print_sync_result(result)
     return result
+
+
+def _write_rank_json(
+    total_xp: int,
+    level: int,
+    tier: dict,
+    streak_info: object,
+    achievements_unlocked: int,
+) -> None:
+    """Write ~/.claude/rank.json for status line and SessionStart hook."""
+    xp_in_level, xp_for_next = xp_progress_in_level(total_xp)
+    rank_data = {
+        "level": level,
+        "title": tier["name"],
+        "tier": tier["tier"],
+        "color": tier["color"],
+        "total_xp": total_xp,
+        "xp_in_level": xp_in_level,
+        "xp_for_next": xp_for_next,
+        "current_streak": getattr(streak_info, "current_streak", 0),
+        "longest_streak": getattr(streak_info, "longest_streak", 0),
+        "freeze_count": getattr(streak_info, "freeze_count", 0),
+        "achievements_unlocked": achievements_unlocked,
+        "last_sync": datetime.now(tz=timezone.utc).isoformat(),
+    }
+    rank_file = Path.home() / ".claude" / "rank.json"
+    rank_file.write_text(json.dumps(rank_data, indent=2) + "\n")
 
 
 def do_dashboard(db: Database) -> None:
