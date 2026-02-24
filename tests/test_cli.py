@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from claude_rank.cli import (
+    _count_weekend_sessions,
     build_parser,
     do_achievements,
     do_dashboard,
@@ -298,3 +299,38 @@ class TestDoAchievements:
 
         # Should not raise
         do_achievements(db)
+
+
+# ── _count_weekend_sessions ──────────────────────────────────────────────────
+
+
+class TestCountWeekendSessions:
+    def test_counts_saturday_and_sunday(self):
+        """Saturday and Sunday sessions are counted."""
+        activity = [
+            DailyActivity(date="2025-01-04", message_count=10, session_count=2, tool_call_count=5),  # Saturday
+            DailyActivity(date="2025-01-05", message_count=10, session_count=3, tool_call_count=5),  # Sunday
+        ]
+        assert _count_weekend_sessions(activity) == 5
+
+    def test_ignores_weekdays(self):
+        """Weekday sessions are not counted."""
+        activity = [
+            DailyActivity(date="2025-01-06", message_count=10, session_count=4, tool_call_count=5),  # Monday
+            DailyActivity(date="2025-01-07", message_count=10, session_count=2, tool_call_count=5),  # Tuesday
+            DailyActivity(date="2025-01-08", message_count=10, session_count=1, tool_call_count=5),  # Wednesday
+        ]
+        assert _count_weekend_sessions(activity) == 0
+
+    def test_empty_list(self):
+        """Empty activity list returns 0."""
+        assert _count_weekend_sessions([]) == 0
+
+    def test_mixed_weekday_and_weekend(self):
+        """Only weekend sessions are counted from mixed input."""
+        activity = [
+            DailyActivity(date="2025-01-06", message_count=10, session_count=4, tool_call_count=5),  # Monday
+            DailyActivity(date="2025-01-11", message_count=10, session_count=2, tool_call_count=5),  # Saturday
+            DailyActivity(date="2025-01-12", message_count=10, session_count=1, tool_call_count=5),  # Sunday
+        ]
+        assert _count_weekend_sessions(activity) == 3

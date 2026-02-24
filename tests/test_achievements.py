@@ -81,6 +81,188 @@ class TestCheckAchievements:
         mr = next(r for r in results if r.definition.id == "marathon_runner")
         assert mr.unlocked is True
 
+    # --- New achievement unlock tests ---
+
+    def test_veteran_unlocks(self):
+        stats = {"total_sessions": 500}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "veteran")
+        assert ach.unlocked is True
+
+    def test_veteran_not_unlocked(self):
+        stats = {"total_sessions": 499}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "veteran")
+        assert ach.unlocked is False
+
+    def test_ten_thousand_voices_unlocks(self):
+        stats = {"total_messages": 10000}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "ten_thousand_voices")
+        assert ach.unlocked is True
+
+    def test_ten_thousand_voices_not_unlocked(self):
+        stats = {"total_messages": 9999}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "ten_thousand_voices")
+        assert ach.unlocked is False
+
+    def test_globetrotter_unlocks(self):
+        stats = {"unique_projects": 20}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "globetrotter")
+        assert ach.unlocked is True
+
+    def test_globetrotter_not_unlocked(self):
+        stats = {"unique_projects": 19}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "globetrotter")
+        assert ach.unlocked is False
+
+    def test_weekend_warrior_unlocks(self):
+        stats = {"weekend_sessions": 10}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "weekend_warrior")
+        assert ach.unlocked is True
+
+    def test_weekend_warrior_not_unlocked(self):
+        stats = {"weekend_sessions": 9}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "weekend_warrior")
+        assert ach.unlocked is False
+
+    def test_bash_master_unlocks(self):
+        stats = {"bash_count": 1000}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "bash_master")
+        assert ach.unlocked is True
+
+    def test_bash_master_not_unlocked(self):
+        stats = {"bash_count": 999}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "bash_master")
+        assert ach.unlocked is False
+
+    def test_the_legend_unlocks(self):
+        stats = {"total_sessions": 1000}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "the_legend")
+        assert ach.unlocked is True
+
+    def test_the_legend_not_unlocked(self):
+        stats = {"total_sessions": 999}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "the_legend")
+        assert ach.unlocked is False
+
+    def test_code_surgeon_unlocks(self):
+        stats = {"total_tool_calls": 50000}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "code_surgeon")
+        assert ach.unlocked is True
+
+    def test_code_surgeon_not_unlocked(self):
+        stats = {"total_tool_calls": 49999}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "code_surgeon")
+        assert ach.unlocked is False
+
+    def test_ultramarathon_unlocks(self):
+        stats = {"longest_session_messages": 500}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "ultramarathon")
+        assert ach.unlocked is True
+
+    def test_ultramarathon_not_unlocked(self):
+        stats = {"longest_session_messages": 499}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "ultramarathon")
+        assert ach.unlocked is False
+
+    def test_on_a_roll_unlocks(self):
+        stats = {"longest_streak": 14}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "on_a_roll")
+        assert ach.unlocked is True
+
+    def test_on_a_roll_not_unlocked(self):
+        stats = {"longest_streak": 13}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "on_a_roll")
+        assert ach.unlocked is False
+
+    def test_zero_defect_unlocks(self):
+        stats = {"total_xp": 50000}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "zero_defect")
+        assert ach.unlocked is True
+
+    def test_zero_defect_not_unlocked(self):
+        stats = {"total_xp": 49999}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "zero_defect")
+        assert ach.unlocked is False
+
+    def test_the_inception_unlocks(self):
+        stats = {"task_count": 100}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "the_inception")
+        assert ach.unlocked is True
+
+    def test_the_inception_not_unlocked(self):
+        stats = {"task_count": 99}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "the_inception")
+        assert ach.unlocked is False
+
+    def test_night_shift_unlocks(self):
+        stats = {"night_sessions": 50}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "night_shift")
+        assert ach.unlocked is True
+
+    def test_night_shift_not_unlocked(self):
+        stats = {"night_sessions": 49}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "night_shift")
+        assert ach.unlocked is False
+
+    def test_century_streak_unlocks(self):
+        stats = {"longest_streak": 100}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "century_streak")
+        assert ach.unlocked is True
+
+    def test_century_streak_not_unlocked(self):
+        stats = {"longest_streak": 99}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "century_streak")
+        assert ach.unlocked is False
+
+    def test_omega_grind_unlocks(self):
+        stats = {"total_xp": 200000}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "omega_grind")
+        assert ach.unlocked is True
+
+    def test_omega_grind_not_unlocked(self):
+        stats = {"total_xp": 199999}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "omega_grind")
+        assert ach.unlocked is False
+
+    def test_world_builder_unlocks(self):
+        stats = {"unique_projects": 50}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "world_builder")
+        assert ach.unlocked is True
+
+    def test_world_builder_not_unlocked(self):
+        stats = {"unique_projects": 49}
+        results = check_achievements(stats)
+        ach = next(r for r in results if r.definition.id == "world_builder")
+        assert ach.unlocked is False
+
     def test_progress_capped_at_one(self):
         stats = {"total_sessions": 500}
         results = check_achievements(stats)
@@ -261,6 +443,9 @@ class TestAchievementDefinitions:
     def test_rarity_values_are_valid(self):
         for a in ACHIEVEMENTS:
             assert isinstance(a.rarity, Rarity)
+
+    def test_uncommon_rarity_valid(self):
+        assert Rarity.UNCOMMON.value == "uncommon"
 
     def test_expected_ids(self):
         expected = {
